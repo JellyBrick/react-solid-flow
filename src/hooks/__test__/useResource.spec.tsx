@@ -200,7 +200,7 @@ describe("useResource", () => {
       ));
       try {
         await act(() => vi.advanceTimersToNextTimer());
-      } catch(e) {
+      } catch(_e) {
         expect(onError).toBeCalledTimes(1);
         expect(onError).toBeCalledWith(err);
       }

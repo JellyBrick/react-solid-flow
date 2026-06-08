@@ -3,25 +3,25 @@ import { useReducer, Reducer } from "react";
 import { NullishError } from "../models/NullishError";
 import type { Initializer } from "../models/Initializer";
 
-export function useResourceReducer<T>(
+export const useResourceReducer = <T>(
   initialValue?: Initializer<Awaited<T>>,
   skipFirstRun?: boolean,
-) {
+) => {
   return useReducer(
     resourceReducer as Reducer<Resource<T>, Action<T>>,
     [initialValue, skipFirstRun] as const,
     resourceInitializer,
   );
-}
+};
 
-function resourceInitializer<T>(init: readonly [
+const resourceInitializer = <T>(init: readonly [
   val: Initializer<Awaited<T>> | undefined,
   skip: boolean | undefined,
-]): Resource<T> {
+]): Resource<T> => {
   const [val, skip = false] = init;
   const value = (typeof val === "function") ? val() : val;
   return Resource.from(value, !skip);
-}
+};
 
 type Action<T> =
   | { type: "PEND" /* -> "pending" | "refreshing" */ }
@@ -29,7 +29,7 @@ type Action<T> =
   | { type: "SYNC-RESULT" /* -> "ready" */, payload: Awaited<T> }
   | { type: "REJECT" /* -> "errored" */, payload: any }
 
-export function resourceReducer<T>(resource: Resource<T>, action: Action<T>): Resource<T> {
+export const resourceReducer = <T>(resource: Resource<T>, action: Action<T>): Resource<T> => {
   const type = action?.type;
   switch (type) {
     case "PEND":
@@ -40,7 +40,6 @@ export function resourceReducer<T>(resource: Resource<T>, action: Action<T>): Re
       }, resource);
     case "RESOLVE":
       return new Resource({
-        ...resource,
         loading: false,
         error: undefined,
         data: action.payload,
@@ -61,10 +60,10 @@ export function resourceReducer<T>(resource: Resource<T>, action: Action<T>): Re
         data: undefined,
       }, resource);
     default:
-      assertExhaustiveState(type);
+      return assertExhaustiveState(type);
   }
-}
+};
 
-function assertExhaustiveState(_: never): never {
+const assertExhaustiveState = (_: never): never => {
   throw new Error("Invalid action type");
-}
+};

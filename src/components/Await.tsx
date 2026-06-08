@@ -14,15 +14,18 @@ interface AwaitProps<T> {
 }
 
 /** Component for displaying a Resource */
-export function Await<T>(props: AwaitProps<T>): ReactElement | null {
+export const Await = <T,>(props: AwaitProps<T>): ReactElement | null => {
   if (props.for == null) {
     return null;
   }
   if (props.for.loading) {
     return renderProp(props.fallback);
   }
-  if (props.for.error != null) {
+  if (props.for.error !== undefined) {
     return renderProp(props.catch, props.for.error);
   }
-  return renderProp(props.children, props.for.data!);
-}
+  if (props.for.data === undefined) {
+    return renderProp(props.fallback);
+  }
+  return renderProp(props.children, props.for.data);
+};

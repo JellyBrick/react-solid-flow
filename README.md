@@ -10,7 +10,7 @@ display, Portals, ErrorBoundaries, fetching and displaying async data, etc.
 - Native Typescript support
 - Lightweight: (5kb minified, 2.5kb gzip), tree-shakable,
 - Zero third-party dependencies, except React and React-DOM
-- Modern: React 16.8+ .. 18.x, no legacy APIs or weird hacks
+- Modern: React 16.8+ .. 19.x, no legacy APIs or weird hacks
 - Fully tested
 - Easy to use
 - Hooks and components for performing async operations, handling cancellations,
@@ -80,6 +80,11 @@ import { Show } from "react-solid-flow";
 ```
 Conditionally renders, depending on truthiness of the `when` prop, either the
 `children` prop or (optionally) the `fallback` prop.
+
+> **Note:** `Show`, `Match` and `Switch` branch on the _truthiness_ of `when`
+> (just like a `when ? ... : ...` ternary), so falsy-but-valid values like `0`,
+> `""` or `false` fall through to the `fallback`. If you need to display such a
+> value, test for presence explicitly, e.g. `when={data !== undefined}`.
 
 #### Switch / Match
 
@@ -238,7 +243,8 @@ React events will still function as usual.
 
 The `mount` prop can be either a native node or a query selector for such a node.
 
-If no node is provided, the component will render nothing.
+If no `mount` is provided, it defaults to `document.body` (matching SolidJS).
+If a query selector is given but matches no element, the component renders nothing.
 
 Plase notice, it requires react-dom as its depenndency.
 <!-- `useShadow` places the element in Shadow Root for style isolation -->

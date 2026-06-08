@@ -7,7 +7,7 @@ interface PauseOpts {
  * @param [opts.signal] optional AbortController
  * @returns Promise, resolved when timeout is passed, rejected if aborted (in the same way as fetch() is)
  */
-export function pause(timeout: number, { signal }: PauseOpts = {}) {
+export const pause = (timeout: number, { signal }: PauseOpts = {}) => {
   return new Promise<void>((res, rej) => {
     const to = setTimeout(() => {
       if (typeof signal?.removeEventListener === "function") {
@@ -16,15 +16,15 @@ export function pause(timeout: number, { signal }: PauseOpts = {}) {
       res();
     }, timeout);
 
-    function abortHandler(this: AbortSignal) {
+    const abortHandler = () => {
       if (to) {
         clearTimeout(to);
       }
-      rej(this.reason);
-    }
+      rej(signal!.reason);
+    };
 
     if (typeof signal?.addEventListener === "function") {
       signal.addEventListener("abort", abortHandler, { once: true });
     }
   });
-}
+};

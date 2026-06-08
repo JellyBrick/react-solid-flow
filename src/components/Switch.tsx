@@ -1,5 +1,5 @@
-import { Children, ReactElement, isValidElement } from "react";
-import type { ReactNode } from "react";
+import { isValidElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { nodeToElement } from "../helpers/nodeToElement";
 
 interface SwitchProps {
@@ -7,14 +7,28 @@ interface SwitchProps {
   /** content to display if no Match predicate is truthy */
   fallback?: ReactNode;
 }
+
+type WhenElement = ReactElement<{ when?: unknown }>;
+
+const findFirstMatch = (children: ReactNode): WhenElement | null => {
+  if (Array.isArray(children)) {
+    for (const child of children) {
+      const found = findFirstMatch(child);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }
+  if (isValidElement<{ when?: unknown }>(children) && children.props.when) {
+    return children;
+  }
+  return null;
+};
+
 /** Component to display one exclusive condition out of many,
  * using Match component
  */
-export function Switch(props: SwitchProps): ReactElement | null {
-  for (const item of Children.toArray(props.children)) {
-    if (isValidElement(item) && item.props.when) {
-      return item;
-    }
-  }
-  return nodeToElement(props.fallback);
-}
+export const Switch = (props: SwitchProps): ReactElement | null => {
+  return findFirstMatch(props.children) ?? nodeToElement(props.fallback);
+};

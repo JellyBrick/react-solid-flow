@@ -51,7 +51,7 @@ describe("Switch/Match component", () => {
   });
 
   it("Match's renderProps are non-nullable", () => {
-    function test(arg: undefined) { arg }
+    function test(_arg: undefined) {}
     render((
       <Match when={"test" as string | undefined}>
         {/*@ts-expect-error undefined should be filtered out*/}

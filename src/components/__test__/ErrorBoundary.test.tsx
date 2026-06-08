@@ -79,4 +79,25 @@ describe("ErrorBoundary component", () => {
     expect(onCatch).toBeCalledTimes(1);
     expect(onCatch.mock.calls[0][0].message).toBe("test error");
   });
+
+  it("catches a thrown nullish value and shows fallback", () => {
+    const NullishThrower = () => {
+      throw undefined;
+    };
+    const muteAll = (e: ErrorEvent) => e.preventDefault();
+    window.addEventListener("error", muteAll);
+    try {
+      const onCatch = vi.fn();
+      render((
+        <ErrorBoundary onCatch={onCatch} fallback="caught">
+          <NullishThrower />
+        </ErrorBoundary>
+      ));
+      expect(screen.queryAllByText("caught").length).toBe(1);
+      expect(onCatch).toBeCalledTimes(1);
+      expect(onCatch.mock.calls[0][0]).toBe(undefined);
+    } finally {
+      window.removeEventListener("error", muteAll);
+    }
+  });
 });

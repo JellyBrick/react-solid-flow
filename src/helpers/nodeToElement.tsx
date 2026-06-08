@@ -2,7 +2,7 @@ import React from "react";
 import { isValidElement } from "react";
 import type { ReactElement, ReactNode } from "react";
 
-export function nodeToElement(item: ReactNode | undefined | null): ReactElement | null {
+export const nodeToElement = (item: ReactNode | undefined | null): ReactElement | null => {
   if (item == null) {
     return null;
   }
@@ -10,4 +10,4 @@ export function nodeToElement(item: ReactNode | undefined | null): ReactElement 
     return item;
   }
   return <>{item}</>;
-}
+};

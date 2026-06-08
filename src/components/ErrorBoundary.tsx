@@ -11,6 +11,7 @@ interface ErrorBoundaryProps {
 }
 
 interface ErrorBoundaryState {
+  hasError: boolean;
   error: unknown;
 }
 
@@ -22,24 +23,24 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   state: ErrorBoundaryState = {
+    hasError: false,
     error: undefined,
   };
 
   static getDerivedStateFromError(error: unknown) {
-    return { error };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: unknown, errorInfo: unknown) {
     this.props.onCatch?.(error, errorInfo);
-    this.setState({ error });
   }
 
   resetError() {
-    this.setState({ error: undefined });
+    this.setState({ hasError: false, error: undefined });
   }
 
   render() {
-    if (this.state.error === undefined) {
+    if (!this.state.hasError) {
       return this.props.children;
     }
     if (typeof this.props.fallback === "function") {

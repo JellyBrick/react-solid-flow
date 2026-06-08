@@ -9,9 +9,9 @@ interface MatchProps<T> {
 }
 
 /** Single branch of Switch component. */
-export function Match<T>({ when, children }: MatchProps<T>): ReactElement | null {
+export const Match = <T,>({ when, children }: MatchProps<T>): ReactElement | null => {
   if (!when) {
     return null;
   }
   return renderProp(children, when);
-}
+};

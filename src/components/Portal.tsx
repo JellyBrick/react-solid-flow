@@ -9,18 +9,17 @@ interface PortalProps {
 }
 
 /** Component for rendering children outside of the Component Hierarchy root node. */
-export function Portal({
+export const Portal = ({
   mount,
   ...props
-}: PortalProps): ReactPortal | null {
-  const target = (
-    mount == null ||
-    mount instanceof Element ||
-    mount instanceof DocumentFragment
-  ) ? mount : document.querySelector(mount);
+}: PortalProps): ReactPortal | null => {
+  const target =
+    mount == null ? document.body :
+    (mount instanceof Element || mount instanceof DocumentFragment) ? mount :
+    document.querySelector(mount);
 
   if (!target) {
     return null;
   }
   return createPortal(props.children, target);
-}
+};

@@ -15,11 +15,11 @@ interface ForProps<T, U extends ReactNode> {
 /** Component for mapping an array into collection of ReactNode's
  * Omits nullish children and provides keys if they're not specified.
  */
-export function For<T, U extends ReactNode>({
+export const For = <T, U extends ReactNode>({
   children,
   each,
   fallback = null,
-}: ForProps<T, U>): ReactElement | null {
+}: ForProps<T, U>): ReactElement | null => {
   if (!Array.isArray(each) || !each.length || children == null) {
     return nodeToElement(fallback);
   }
@@ -30,21 +30,23 @@ export function For<T, U extends ReactNode>({
     );
   }
 
-  const content: ReactElement[] = [];
+  const content: ReactElement[] = new Array(each.length);
+  let w = 0;
   for (let i = 0; i < each.length; i++) {
     const child = children(each[i], i);
     if (child == null) {
       continue;
     }
     if (!isValidElement(child) || !child.key) {
-      content.push((<Fragment key={i}>{child}</Fragment>));
+      content[w++] = <Fragment key={i}>{child}</Fragment>;
     } else {
-      content.push(child);
+      content[w++] = child;
     }
   }
-  if (!content.length) {
+  if (!w) {
     return nodeToElement(fallback);
   }
+  content.length = w;
 
   return <>{content}</>;
-}
+};

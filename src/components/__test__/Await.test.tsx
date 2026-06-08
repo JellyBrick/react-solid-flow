@@ -8,7 +8,7 @@ describe("Await", () => {
     const state = {
       loading: false,
       data: 123,
-      error: null,
+      error: undefined,
     };
     render((
       <Await for={state} catch={<i>test</i>} fallback={<i>loading</i>}>
@@ -72,7 +72,7 @@ describe("Await", () => {
     const state = {
       loading: false,
       data: 123,
-      error: null,
+      error: undefined,
     };
     render((
       <Await for={state} catch={<i>test</i>} fallback={<i>loading</i>}>
@@ -82,6 +82,38 @@ describe("Await", () => {
     expect(screen.queryByText("loading")).toBeNull();
     expect(screen.queryByText("test")).toBeNull();
     expect(screen.queryByText("123")).toBeDefined();
+  });
+
+  it("renders fallback if Resource is unresolved (no data, no error)", () => {
+    const state = {
+      loading: false,
+      data: undefined,
+      error: undefined,
+    };
+    render((
+      <Await for={state} catch={<i>test</i>} fallback={<i>loading</i>}>
+        Hi mom!
+      </Await>
+    ));
+    expect(screen.queryByText("loading")).not.toBeNull();
+    expect(screen.queryByText("test")).toBeNull();
+    expect(screen.queryByText("Hi mom!")).toBeNull();
+  });
+
+  it("treats a falsy (non-undefined) error as errored", () => {
+    const state = {
+      loading: false,
+      data: undefined,
+      error: false,
+    };
+    render((
+      <Await for={state} catch={<i>test</i>} fallback={<i>loading</i>}>
+        Hi mom!
+      </Await>
+    ));
+    expect(screen.queryByText("loading")).toBeNull();
+    expect(screen.queryByText("test")).not.toBeNull();
+    expect(screen.queryByText("Hi mom!")).toBeNull();
   });
 
   it("renders nothing if `for` isn't passed", () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useResourceReducer } from "./useResourceReducer";
 import type { Resource } from "../models/Resource";
 import type { Initializer } from "../models/Initializer";
@@ -58,7 +58,7 @@ export interface FetcherOpts {
   signal: AbortSignal;
 }
 
-export function useResource<T, TArgs extends readonly any[]>(
+export const useResource = <T, TArgs extends readonly any[]>(
   fetcher:
     | ((...args: [...TArgs, FetcherOpts]) => Promise<T> | T)
     | ((...args: TArgs) => Promise<T> | T),
@@ -71,10 +71,10 @@ export function useResource<T, TArgs extends readonly any[]>(
     skip = false,
     skipFnMemoization,
   }: ResourceOptions<T> = {},
-): ResourceReturn<T, TArgs> {
+): ResourceReturn<T, TArgs> => {
   // it's actually initialized in the effect bellow, so we don't create empty controllers
   // on each render
-  const controller = useRef<AbortController>();
+  const controller = useRef<AbortController | undefined>(undefined);
   const skipFirst = useRef<boolean>(skipFirstRun);
 
   const [resource, dispatch] = useResourceReducer(initialValue, skip || skipFirstRun);
@@ -87,8 +87,27 @@ export function useResource<T, TArgs extends readonly any[]>(
 
   const fetcherFn = useCallback(
     (refetching: boolean, ...args: [...TArgs]): T | Promise<T> => {
-      let val: Promise<T> | T;
       const cont = controller.current;
+
+      const handler = async (val: Promise<T>) => {
+        dispatch({ type: "PEND" });
+        try {
+          const result = await val;
+          // As fetcher can completely ignore AbortController we're checking
+          // for race conditions separately, by checking that AbortController
+          // instance hasn't changed between calls.
+          if (cont !== controller.current) { return }
+          dispatch({ type: "RESOLVE", payload: result });
+          onCompleted?.(result);
+        } catch (e) {
+          if (isAbortError(e)) { return }
+          if (cont !== controller.current) { return }
+          dispatch({ type: "REJECT", payload: e });
+          onError?.(e);
+        }
+      };
+
+      let val: Promise<T> | T;
       try {
         // in theory, this error should never happen, but better be on the safe side
         if (cont == null) {
@@ -110,24 +129,6 @@ export function useResource<T, TArgs extends readonly any[]>(
           throw e;
         }
         return undefined as never;
-      }
-
-      async function handler(val: Promise<T>) {
-        dispatch({ type: "PEND" });
-        try {
-          const result = await val;
-          // As fetcher can completely ignore AbortController we're checking
-          // for race conditions separately, by checking that AbortController
-          // instance hasn't changed between calls.
-          if (cont !== controller.current) { return }
-          dispatch({ type: "RESOLVE", payload: result });
-          onCompleted?.(result);
-        } catch (e) {
-          if (isAbortError(e)) { return }
-          if (cont !== controller.current) { return }
-          dispatch({ type: "REJECT", payload: e });
-          onError?.(e);
-        }
       }
     },
     skipFnMemoization ? [fetcher] : [],
@@ -168,12 +169,17 @@ export function useResource<T, TArgs extends readonly any[]>(
     // retrigger the fetching, if someone forgot to memoize it
   }, [...deps, skip, fetcherFn]);
 
-  return [resource, { mutate, refetch, abort }];
-}
+  const actions = useMemo(
+    () => ({ mutate, refetch, abort }),
+    [mutate, refetch, abort],
+  );
 
-function isAbortError(e: any): e is { name: "AbortError" } {
+  return [resource, actions];
+};
+
+const isAbortError = (e: any): e is { name: "AbortError" } => {
   // We can't really check if it's an instanceof DOMException as it doesn't
   // exist in older node version, and we can't check if it's an instanceof
   // Error, as jsdom implementation of DOMException isn't an instance of it.
   return e != null && e.name === "AbortError";
-}
+};

@@ -11,12 +11,12 @@ interface ShowProps<T> {
   fallback?: ReactNode;
 }
 /** Conditional rendering component */
-export function Show<T>({
+export const Show = <T,>({
   fallback = null,
   ...props
-}: ShowProps<T>): ReactElement | null {
+}: ShowProps<T>): ReactElement | null => {
   if (!props.when) {
     return nodeToElement(fallback);
   }
   return renderProp(props.children, props.when);
-}
+};
