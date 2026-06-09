@@ -41,7 +41,7 @@ function For<T, U extends ReactNode>(props: {
 ```
 
 ```tsx
-import { For } from "react-solid-flow";
+import { For } from "@jellybrick/react-solid-flow";
 
 <For each={collection} fallback="list is empty!">
   {(i) => <li key={i.id}>{i.name}</li>}
@@ -72,7 +72,7 @@ function Show<T>(props: {
 ```
 
 ```tsx
-import { Show } from "react-solid-flow";
+import { Show } from "@jellybrick/react-solid-flow";
 
 <Show when={parentSeen === 'mom'} fallback={<h3>nevermind...</h3>}>
   <h2>Hi mom!</h2>
@@ -101,7 +101,7 @@ function Match<T>(props: {
 ```
 
 ```tsx
-import { Switch, Match } from "react-solid-flow";
+import { Switch, Match } from "@jellybrick/react-solid-flow";
 
 <Switch fallback={<h3>nevermind...</h3>}>
   <Match when={parentSeen === "mom"}>
@@ -133,7 +133,7 @@ class ErrorBoundary extends Component<{
 ```
 
 ```tsx
-import { ErrorBoundary } from "react-solid-flow";
+import { ErrorBoundary } from "@jellybrick/react-solid-flow";
 
 <ErrorBoundary fallback={(err, reset) => (
   <div className="panel-danger">
@@ -179,7 +179,7 @@ object that conforms to the required interface (such as responses from
 the Apollo Client).
 
 ```tsx
-import { Await, useResource } from "react-solid-flow";
+import { Await, useResource } from "@jellybrick/react-solid-flow";
 // See description of useResource hook bellow.
 const [ resource ] = useResource(() => fetch(`/api/v1/employees`).then(r => sr.json()));
 
@@ -204,7 +204,7 @@ function Dynamic<T extends {}, TRef>(
 ): ReactElement | null;
 ```
 ```tsx
-import { Dynamic } from "react-solid-flow";
+import { Dynamic } from "@jellybrick/react-solid-flow";
 
 <Dynamic component={isLink ? "a" : "span"} title="Foo" {...someOtherProps}>
   Maybe click me
@@ -230,7 +230,7 @@ function Portal(props: {
 ```
 
 ```tsx
-import { Portal } from "react-solid-flow";
+import { Portal } from "@jellybrick/react-solid-flow";
 
 <Portal mount="#modal-container-id">
   <dialog>
@@ -259,7 +259,7 @@ The `useResource` hook creates a Resource object that reflects the result of an
 asynchronous request performed by the fetcher function.
 
 ```tsx
-import { useResource } from "react-solid-flow";
+import { useResource } from "@jellybrick/react-solid-flow";
 
 const [{ data, error, loading }] = useResouce(
   (id, { signal }) => fetch(`/api/v1/employee/${id}`, { signal }).json(r => {
