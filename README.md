@@ -23,7 +23,7 @@ display, Portals, ErrorBoundaries, fetching and displaying async data, etc.
 ## Installation
 
 ```sh
-npm install react-solid-flow
+npm install @jellybrick/react-solid-flow
 ```
 
 ## Usage
@@ -463,7 +463,7 @@ import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [
-    react({ babel: { plugins: ["react-solid-flow/babel"] } }),
+    react({ babel: { plugins: ["@jellybrick/react-solid-flow/babel"] } }),
   ],
 });
 ```
