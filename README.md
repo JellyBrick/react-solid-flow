@@ -444,6 +444,30 @@ for that, if you want a recomendation, there's [suspend-react](https://github.co
 
 Check out [useResource examples](./useResource-examples.md) to see different forms of it in action.
 
+## Babel plugin (optional optimization)
+
+`react-solid-flow/babel` is an **opt-in** Babel plugin that rewrites the
+control-flow components into native expressions at compile time, so they leave
+no runtime component (and no extra fiber) behind:
+
+- `Show` / `Switch` + `Match` / `Await`: ternaries / IIFEs
+- `For`: a direct `mapArray(...)` call
+- `ErrorBoundary` is never transformed.
+
+Enable it through your bundler's Babel options. With Vite
+(`@vitejs/plugin-react`):
+
+```ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [
+    react({ babel: { plugins: ["react-solid-flow/babel"] } }),
+  ],
+});
+```
+
 ## Contributing
 If you have any ideas or suggestions or want to report a bug, feel free to
 write in the issues section or create a PR.

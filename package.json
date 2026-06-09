@@ -21,6 +21,26 @@
         "types": "./dist/lib.d.cts",
         "require": "./dist/lib.cjs"
       }
+    },
+    "./internal": {
+      "import": {
+        "types": "./dist/internal.d.ts",
+        "default": "./dist/internal.js"
+      },
+      "require": {
+        "types": "./dist/internal.d.cts",
+        "require": "./dist/internal.cjs"
+      }
+    },
+    "./babel": {
+      "import": {
+        "types": "./dist/babel.d.ts",
+        "default": "./dist/babel.js"
+      },
+      "require": {
+        "types": "./dist/babel.d.cts",
+        "require": "./dist/babel.cjs"
+      }
     }
   },
   "files": [
@@ -38,7 +58,12 @@
     "react-dom": ">=16.8"
   },
   "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.26.0",
+    "@babel/preset-react": "^7.26.0",
+    "@babel/types": "^7.26.0",
     "@eslint/js": "^9.18.0",
+    "@types/babel__core": "^7.20.5",
     "@types/node": "^24.0.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

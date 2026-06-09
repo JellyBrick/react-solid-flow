@@ -1,6 +1,5 @@
-import React, { Fragment, isValidElement } from "react";
 import type { ReactElement, ReactNode } from "react";
-import { nodeToElement } from "../helpers/nodeToElement";
+import { mapArray } from "../helpers/mapArray";
 
 interface ForProps<T, U extends ReactNode> {
   /** Array to iterate over */
@@ -20,33 +19,5 @@ export const For = <T, U extends ReactNode>({
   each,
   fallback = null,
 }: ForProps<T, U>): ReactElement | null => {
-  if (!Array.isArray(each) || !each.length || children == null) {
-    return nodeToElement(fallback);
-  }
-
-  if (typeof children !== "function") {
-    return (
-      <>{each.map((_, idx) => <Fragment key={idx}>{children}</Fragment>)}</>
-    );
-  }
-
-  const content: ReactElement[] = new Array(each.length);
-  let w = 0;
-  for (let i = 0; i < each.length; i++) {
-    const child = children(each[i], i);
-    if (child == null) {
-      continue;
-    }
-    if (!isValidElement(child) || !child.key) {
-      content[w++] = <Fragment key={i}>{child}</Fragment>;
-    } else {
-      content[w++] = child;
-    }
-  }
-  if (!w) {
-    return nodeToElement(fallback);
-  }
-  content.length = w;
-
-  return <>{content}</>;
+  return mapArray(each, children, fallback);
 };
