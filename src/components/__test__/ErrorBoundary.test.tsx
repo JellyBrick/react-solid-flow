@@ -45,6 +45,11 @@ describe("ErrorBoundary component", () => {
     expect(screen.queryAllByText("fail").length).toBe(1);
   });
 
+  it("renders nothing (not undefined) without children", () => {
+    const { container } = render(<ErrorBoundary fallback="test" />);
+    expect(container.innerHTML).toBe("");
+  });
+
   it("passes error info and recovery cb into fallback render-prop", async () => {
     render((
       <ErrorBoundary fallback={(err, reset) => (

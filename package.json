@@ -1,6 +1,6 @@
 {
   "name": "@jellybrick/react-solid-flow",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "license": "MIT",
   "scripts": {
     "build": "tsdown --dts",
@@ -9,37 +9,39 @@
     "prepack": "npm run lint && npm run test && npm run build"
   },
   "type": "module",
-  "main": "./dist/lib.js",
-  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.cjs",
+  "module": "./dist/lib.mjs",
+  "types": "./dist/lib.d.cts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/lib.d.ts",
-        "default": "./dist/lib.js"
+        "types": "./dist/lib.d.mts",
+        "default": "./dist/lib.mjs"
       },
       "require": {
         "types": "./dist/lib.d.cts",
-        "require": "./dist/lib.cjs"
+        "default": "./dist/lib.cjs"
       }
     },
     "./internal": {
       "import": {
-        "types": "./dist/internal.d.ts",
-        "default": "./dist/internal.js"
+        "types": "./dist/internal.d.mts",
+        "default": "./dist/internal.mjs"
       },
       "require": {
         "types": "./dist/internal.d.cts",
-        "require": "./dist/internal.cjs"
+        "default": "./dist/internal.cjs"
       }
     },
     "./babel": {
       "import": {
-        "types": "./dist/babel.d.ts",
-        "default": "./dist/babel.js"
+        "types": "./dist/babel.d.mts",
+        "default": "./dist/babel.mjs"
       },
       "require": {
         "types": "./dist/babel.d.cts",
-        "require": "./dist/babel.cjs"
+        "default": "./dist/babel.cjs"
       }
     }
   },

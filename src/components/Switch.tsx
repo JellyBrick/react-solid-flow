@@ -11,17 +11,20 @@ interface SwitchProps {
 type WhenElement = ReactElement<{ when?: unknown }>;
 
 const findFirstMatch = (children: ReactNode): WhenElement | null => {
-  if (Array.isArray(children)) {
-    for (const child of children) {
+  if (isValidElement<{ when?: unknown }>(children)) {
+    return children.props.when ? children : null;
+  }
+  if (
+    children != null &&
+    typeof children === "object" &&
+    (Array.isArray(children) || Symbol.iterator in children)
+  ) {
+    for (const child of children as Iterable<ReactNode>) {
       const found = findFirstMatch(child);
       if (found) {
         return found;
       }
     }
-    return null;
-  }
-  if (isValidElement<{ when?: unknown }>(children) && children.props.when) {
-    return children;
   }
   return null;
 };

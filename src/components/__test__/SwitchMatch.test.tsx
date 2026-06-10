@@ -15,6 +15,20 @@ describe("Switch/Match component", () => {
     expect(screen.queryAllByText("test1").length).toBe(0);
   });
 
+  it("finds a Match inside iterable (non-array) children", () => {
+    const matches = new Set([
+      <Match key="a" when={0}><i>test1</i></Match>,
+      <Match key="b" when={1}><i>test2</i></Match>,
+    ]);
+    render((
+      <Switch fallback="testF">
+        {matches}
+      </Switch>
+    ));
+    expect(screen.queryAllByText("testF").length).toBe(0);
+    expect(screen.queryAllByText("test2").length).toBe(1);
+  });
+
   it("renders only the first Match tag with truthy 'when'", () => {
     render((
       <Switch fallback="testF">

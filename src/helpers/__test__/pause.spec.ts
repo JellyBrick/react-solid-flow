@@ -29,4 +29,11 @@ describe("pause", () => {
     controller.abort("test");
     await expect(prms).rejects.toBe("test");
   });
+
+  it("rejects immediately if the signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort("pre-aborted");
+    const prms = pause(t, { signal: controller.signal });
+    await expect(prms).rejects.toBe("pre-aborted");
+  });
 });

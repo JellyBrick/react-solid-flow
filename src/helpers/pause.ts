@@ -9,6 +9,10 @@ interface PauseOpts {
  */
 export const pause = (timeout: number, { signal }: PauseOpts = {}) => {
   return new Promise<void>((res, rej) => {
+    if (signal?.aborted) {
+      rej(signal.reason);
+      return;
+    }
     const to = setTimeout(() => {
       if (typeof signal?.removeEventListener === "function") {
         signal.removeEventListener("abort", abortHandler);

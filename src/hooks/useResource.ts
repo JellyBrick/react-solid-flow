@@ -77,6 +77,13 @@ export const useResource = <T, TArgs extends readonly any[]>(
   const controller = useRef<AbortController | undefined>(undefined);
   const skipFirst = useRef<boolean>(skipFirstRun);
 
+  // Always call the latest callbacks, without retriggering the fetch effect
+  // when an unmemoized callback is passed.
+  const callbacks = useRef({ onCompleted, onError });
+  useEffect(() => {
+    callbacks.current = { onCompleted, onError };
+  });
+
   const [resource, dispatch] = useResourceReducer(initialValue, skip || skipFirstRun);
 
   const mutate = useCallback((val: Awaited<T>) => {
@@ -98,12 +105,12 @@ export const useResource = <T, TArgs extends readonly any[]>(
           // instance hasn't changed between calls.
           if (cont !== controller.current) { return }
           dispatch({ type: "RESOLVE", payload: result });
-          onCompleted?.(result);
+          callbacks.current.onCompleted?.(result);
         } catch (e) {
           if (isAbortError(e)) { return }
           if (cont !== controller.current) { return }
           dispatch({ type: "REJECT", payload: e });
-          onError?.(e);
+          callbacks.current.onError?.(e);
         }
       };
 
@@ -117,7 +124,7 @@ export const useResource = <T, TArgs extends readonly any[]>(
           signal: cont.signal,
           refetching,
         }] as unknown as TArgs);
-        if (val instanceof Promise) {
+        if (isThenable(val)) {
           handler(val);
         } else {
           dispatch({ type: "SYNC-RESULT", payload: val as Awaited<T> });
@@ -125,6 +132,7 @@ export const useResource = <T, TArgs extends readonly any[]>(
         return val;
       } catch (e) {
         dispatch({ type: "REJECT", payload: e });
+        callbacks.current.onError?.(e);
         if (refetching) {
           throw e;
         }
@@ -145,11 +153,15 @@ export const useResource = <T, TArgs extends readonly any[]>(
   }, []);
 
   useEffect(() => {
-    skipFirst.current = skipFirstRun;
     if (!controller.current) {
       controller.current = new AbortController();
     }
-  }, [skipFirstRun]);
+    // Abort on unmount even when the last fetch-effect run was skipped
+    // (skip / skipFirstRun), so a pending manual refetch can't leak.
+    return () => {
+      controller.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (skipFirst.current) {
@@ -182,4 +194,10 @@ const isAbortError = (e: any): e is { name: "AbortError" } => {
   // exist in older node version, and we can't check if it's an instanceof
   // Error, as jsdom implementation of DOMException isn't an instance of it.
   return e != null && e.name === "AbortError";
+};
+
+const isThenable = <T,>(v: T | Promise<T>): v is Promise<T> => {
+  // instanceof Promise misses cross-realm promises and custom thenables,
+  // which await would still unwrap.
+  return v != null && typeof (v as any).then === "function";
 };

@@ -13,6 +13,10 @@ export const Portal = ({
   mount,
   ...props
 }: PortalProps): ReactPortal | null => {
+  // SSR: there is no DOM to portal into — render nothing, like SolidJS does.
+  if (typeof document === "undefined") {
+    return null;
+  }
   const target =
     mount == null ? document.body :
     (mount instanceof Element || mount instanceof DocumentFragment) ? mount :

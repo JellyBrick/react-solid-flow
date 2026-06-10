@@ -446,13 +446,20 @@ Check out [useResource examples](./useResource-examples.md) to see different for
 
 ## Babel plugin (optional optimization)
 
-`react-solid-flow/babel` is an **opt-in** Babel plugin that rewrites the
-control-flow components into native expressions at compile time, so they leave
-no runtime component (and no extra fiber) behind:
+`@jellybrick/react-solid-flow/babel` is an **opt-in** Babel plugin that rewrites
+the control-flow components into native expressions at compile time, so they
+leave no runtime component (and no extra fiber) behind:
 
 - `Show` / `Switch` + `Match` / `Await`: ternaries / IIFEs
 - `For`: a direct `mapArray(...)` call
 - `ErrorBoundary` is never transformed.
+
+Inlined branches are evaluated lazily (short-circuit), unlike the eager runtime
+components — identical output for side-effect-free expressions. Only statically
+analyzable JSX whose tags are imported from this package is transformed;
+anything else (spreads, dynamic `Switch` children, etc.) is left to the runtime
+components, so omitting the plugin — or using SWC/OXC — keeps everything
+working.
 
 Enable it through your bundler's Babel options. With Vite
 (`@vitejs/plugin-react`):

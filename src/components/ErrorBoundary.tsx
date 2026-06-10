@@ -41,7 +41,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   render() {
     if (!this.state.hasError) {
-      return this.props.children;
+      // ?? null: returning undefined from render() crashes React 16/17
+      return this.props.children ?? null;
     }
     if (typeof this.props.fallback === "function") {
       return this.props.fallback(this.state.error, this.resetError);

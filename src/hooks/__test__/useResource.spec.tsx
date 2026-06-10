@@ -198,12 +198,23 @@ describe("useResource", () => {
         [],
         { onError },
       ));
-      try {
-        await act(() => vi.advanceTimersToNextTimer());
-      } catch(_e) {
-        expect(onError).toBeCalledTimes(1);
-        expect(onError).toBeCalledWith(err);
-      }
+      await act(() => vi.advanceTimersToNextTimer());
+      expect(onError).toBeCalledTimes(1);
+      expect(onError).toBeCalledWith(err);
+    });
+
+    it("calls onError when the fetcher throws synchronously", async () => {
+      const err = new Error("sync test");
+      const onError = vi.fn();
+      renderHook(() => useResource(
+        () => {
+          throw err;
+        },
+        [],
+        { onError },
+      ));
+      expect(onError).toBeCalledTimes(1);
+      expect(onError).toBeCalledWith(err);
     });
 
     it("allows to skip automatic invocation of fetcher with skip flag", async () => {
