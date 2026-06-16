@@ -1,0 +1,33 @@
+# react-solid-flow
+
+> SolidJS-inspired control-flow components (For, Show, Switch/Match, ErrorBoundary,
+> Await, Dynamic, Portal) and an everyday async-state hook (useResource) for React.
+> ~5kb min / 2.5kb gzip, zero runtime dependencies, tree-shakable, TypeScript-native,
+> React 16.8–19 compatible.
+
+Install: `npm install @jellybrick/react-solid-flow`. Peer deps: react/react-dom >= 16.8.
+Components and the hook share a SolidJS-style interface and avoid common React pitfalls
+(missing keys in lists, primitives as children, race conditions in fetches).
+
+## Documentation
+- [README](./README.md): full usage guide — every component and the useResource hook
+- [useResource examples](./useResource-examples.md): real-world async fetching patterns (fetch, axios, ky, forms, external AbortSignal)
+- [Full reference](./llms-full.txt): complete API + examples in a single file
+- [Changelog](./CHANGELOG.md): version history
+
+## Components
+- [For](./README.md#for): keyed list rendering with fallback for empty/nullish arrays
+- [Show](./README.md#show): conditional render on truthiness of `when` (+ render-prop)
+- [Switch / Match](./README.md#switch--match): first truthy Match wins; mutually exclusive branches
+- [ErrorBoundary](./README.md#errorboundary): catch render errors; render-prop fallback with reset()
+- [Await](./README.md#await): render loading/error/resolved states of a Resource-like value
+- [Dynamic](./README.md#dynamic): render an arbitrary component/tag from a prop, forwards ref
+- [Portal](./README.md#portal): render children into another DOM node (defaults to document.body)
+
+## Hooks
+- [useResource](./README.md#useresource): async fetcher → Resource state machine with refetch/mutate/abort, race-condition-safe
+
+## Optional
+- [Babel plugin](./README.md#babel-plugin-optional-optimization): opt-in compile-time inlining of control-flow components
+- [Subpath exports](./llms-full.txt): `/internal` (mapArray, renderProp) and `/babel`
+- [License (MIT)](./LICENSE.txt)

@@ -1,0 +1,488 @@
+# react-solid-flow — Full Reference
+
+> SolidJS-inspired basic control-flow components and an everyday async-state hook
+> library for React. It fulfills everyday needs: iteration, conditional display,
+> Portals, ErrorBoundaries, fetching and displaying async data, etc.
+
+- Package: `@jellybrick/react-solid-flow` (v1.2.0, MIT)
+- Repository: https://github.com/JellyBrick/react-solid-flow
+- Peer dependencies: `react >= 16.8`, `react-dom >= 16.8`
+
+## Highlights
+
+- Native TypeScript support.
+- Lightweight: ~5kb minified, ~2.5kb gzip, tree-shakable.
+- Zero third-party runtime dependencies, except React and React-DOM.
+- Modern: React 16.8+ .. 19.x, no legacy APIs or weird hacks.
+- Fully tested.
+- Hooks and components for async operations, cancellations, mutations, and race conditions.
+- Mostly SolidJS-compatible interface (where it makes sense in the React context).
+- Covers common pitfalls (missing keys in maps, primitives as children, etc.).
+- Made to work in React 16/17 and with older webpack setups.
+
+## Installation
+
+```sh
+npm install @jellybrick/react-solid-flow
+```
+
+`react-dom` is required for the `Portal` component.
+
+## Exports
+
+Main entry — `@jellybrick/react-solid-flow`:
+
+- Components: `For`, `Show`, `Switch`, `Match`, `ErrorBoundary`, `Dynamic`, `Portal`, `Await`
+- Hook: `useResource`
+- Types / models: `Resource`, `ResourceLike`, `ResourceState`, `AbortError`, `NullishError`
+
+Subpath — `@jellybrick/react-solid-flow/internal` (helpers, also used by the Babel plugin output):
+
+- `mapArray(each, children, fallback?)` — the array-mapping helper behind `For`.
+- `renderProp(prop, ...args)` — render-prop resolver used across components (calls `prop` if it's a function, otherwise returns it as-is).
+
+Subpath — `@jellybrick/react-solid-flow/babel`:
+
+- Opt-in Babel plugin that inlines control-flow components at compile time (see "Babel plugin" below).
+
+The package ships dual ESM/CJS builds with type definitions for both, and is marked `sideEffects: false` for tree-shaking.
+
+---
+
+## Components
+
+### For
+
+```tsx
+function For<T, U extends ReactNode>(props: {
+  each: ReadonlyArray<T> | undefined | null;
+  children: ReactNode | ((item: T, idx: number) => U);
+  fallback?: ReactNode;
+}): ReactElement | null;
+```
+
+Renders a collection of items from the `each` prop.
+
+- `children` can be a render-prop function `(item, idx) => node` (the common case) or a static element that is rendered once per item.
+- If `each` isn't an array or has zero length, the optional `fallback` is shown.
+- Any nullish child is omitted. If **every** child is omitted, `fallback` is shown.
+- You can set a `key` on the child's root element from the item's data. If the key isn't specified or is falsy, the array index is added as the key automatically, to avoid non-keyed items in the collection.
+
+```tsx
+import { For } from "@jellybrick/react-solid-flow";
+
+<For each={collection} fallback="list is empty!">
+  {(i) => <li key={i.id}>{i.name}</li>}
+</For>
+```
+
+A static child is repeated `each.length` times:
+
+```tsx
+<For each={[1, 2, 3]}>
+  <h1>hi mom</h1>
+</For>
+```
+
+### Show
+
+```tsx
+function Show<T>(props: {
+  when: T | undefined | null | false;
+  children: ReactNode | ((item: NonNullable<T>) => ReactNode);
+  fallback?: ReactNode;
+}): ReactElement | null;
+```
+
+Conditionally renders, depending on the truthiness of `when`, either `children` or (optionally) `fallback`. When `children` is a render-prop, it receives the narrowed non-nullish value of `when`.
+
+```tsx
+import { Show } from "@jellybrick/react-solid-flow";
+
+<Show when={parentSeen === "mom"} fallback={<h3>nevermind...</h3>}>
+  <h2>Hi mom!</h2>
+</Show>
+
+// render-prop form
+<Show when={user}>{(u) => <span>{u.name}</span>}</Show>
+```
+
+> **Gotcha:** `Show`, `Match` and `Switch` branch on the _truthiness_ of `when` (just like a
+> `when ? ... : ...` ternary), so falsy-but-valid values like `0`, `""` or `false` fall through to
+> the `fallback`. If you need to display such a value, test for presence explicitly, e.g.
+> `when={data !== undefined}`.
+
+### Switch / Match
+
+```tsx
+function Switch(props: {
+  children: ReactNode;
+  fallback?: ReactNode;
+}): ReactElement | null;
+
+function Match<T>(props: {
+  when: T | undefined | null | false;
+  children?: ReactNode | ((item: NonNullable<T>) => ReactNode);
+}): ReactElement | null;
+```
+
+Akin to switch-case: renders one of several mutually exclusive conditions (each described by the `when` prop of a `Match`). `Match` should be a direct descendant of `Switch`, and only the **first** `Match` with a truthy `when` is rendered. If no `Match` has a truthy `when`, the optional `fallback` is shown. `Match` children may also be a render-prop receiving the truthy value.
+
+```tsx
+import { Switch, Match } from "@jellybrick/react-solid-flow";
+
+<Switch fallback={<h3>nevermind...</h3>}>
+  <Match when={parentSeen === "mom"}>Hi Mom!</Match>
+  <Match when={parentSeen === "dad"}>Hi Dad!</Match>
+</Switch>
+```
+
+The same truthiness gotcha as `Show` applies to `Match`/`Switch`.
+
+### ErrorBoundary
+
+```tsx
+class ErrorBoundary extends Component<{
+  fallback?: ReactNode | ((err: unknown, reset: () => void) => ReactNode);
+  children?: ReactNode;
+  onCatch?: (error: unknown, errorInfo: unknown) => void;
+}> {}
+```
+
+A general error boundary that catches **synchronous** errors thrown during render and displays the fallback.
+
+- `fallback` can be a static element or a render-prop `(err, reset) => node`, which receives the caught error and a `reset` callback.
+- Calling `reset()` clears the caught error and re-renders `children`.
+- `onCatch(error, errorInfo)` is invoked when an error is caught.
+- Nullish throws (e.g. `throw undefined`) are caught too; the error is normalized to a `NullishError`.
+
+Note: like all React error boundaries, it does **not** catch errors thrown asynchronously (e.g. inside event handlers or timeouts) — handle those with try/catch.
+
+```tsx
+import { ErrorBoundary } from "@jellybrick/react-solid-flow";
+
+<ErrorBoundary fallback={(err, reset) => (
+  <div className="panel-danger">
+    I failed miserably: <code>{String(err)}</code>
+    <button type="button" onClick={reset}>Try again!</button>
+  </div>
+)}>
+  <SomePotentiallyFailingComponent />
+</ErrorBoundary>
+```
+
+### Await
+
+```tsx
+interface ResourceLike<T> {
+  loading?: boolean;
+  data: Awaited<T> | undefined;
+  error: unknown;
+}
+
+function Await<T>(props: {
+  for: ResourceLike<T>;
+  fallback?: (() => ReactNode) | ReactNode;
+  catch?: ((err: unknown) => ReactNode) | ReactNode;
+  children?: ((data: Awaited<T>) => ReactNode) | ReactNode;
+}): ReactElement | null;
+```
+
+Displays resource-like async data based on its state:
+
+- `fallback` while loading,
+- `catch` if rejected (the render-prop form receives the error),
+- `children` when resolved (the render-prop form receives the data).
+
+Works with a resource returned by `useResource`, or any object conforming to `ResourceLike` (such as responses from the Apollo Client). A falsy-but-defined `error` (e.g. `false`) is still treated as an errored state. Renders nothing if `for` is nullish.
+
+```tsx
+import { Await, useResource } from "@jellybrick/react-solid-flow";
+
+const [ resource ] = useResource(() => fetch(`/api/v1/employees`).then((r) => r.json()));
+
+<Await
+  for={resource}
+  fallback="loading..."
+  catch={(err) => <div>Error: {String(err)}</div>}
+>
+  {(data) => <div>Resolved data: {data}</div>}
+</Await>
+```
+
+### Dynamic
+
+```tsx
+function Dynamic<T extends {}, TRef>(props: T & {
+  ref?: Ref<TRef>;
+  children?: any;
+  component?: ComponentType<T> | string | keyof JSX.IntrinsicElements;
+}): ReactElement | null;
+```
+
+Renders an arbitrary component or intrinsic tag given by `component`, forwarding all other props to it (excluding `component`). Props are type-checked for component types, but not for JSX intrinsic elements (such as `"span"`, `"div"`, etc.). You can pass a `ref` to the target; its type is not inferred automatically, so annotate it. A falsy `component` renders nothing.
+
+```tsx
+import { Dynamic } from "@jellybrick/react-solid-flow";
+
+<Dynamic component={isLink ? "a" : "span"} title="Foo" {...someOtherProps}>
+  Maybe click me
+</Dynamic>
+```
+
+### Portal
+
+```tsx
+function Portal(props: {
+  mount?: Element | DocumentFragment | string;
+  children?: ReactNode;
+}): ReactPortal | null;
+```
+
+Renders `children` outside the component hierarchy's root node, into the `mount` target. React events still function as usual (they propagate through the React tree, not the DOM tree).
+
+- `mount` can be a native node (`Element` / `DocumentFragment`) or a query-selector string.
+- If no `mount` is provided, it defaults to `document.body` (matching SolidJS).
+- If a query selector matches no element — or there is no DOM available (SSR) — the component renders nothing.
+- Requires `react-dom`.
+
+```tsx
+import { Portal } from "@jellybrick/react-solid-flow";
+
+<Portal mount="#modal-container-id">
+  <dialog>Hi Mom!</dialog>
+</Portal>
+```
+
+---
+
+## Hooks
+
+### useResource
+
+The `useResource` hook creates a `Resource` object that reflects the result of an asynchronous request performed by the `fetcher` function.
+
+```tsx
+function useResource<T, TArgs extends readonly any[]>(
+  fetcher:
+    | ((...args: [ ...TArgs, FetcherOpts ]) => Promise<T> | T)
+    | ((...args: [ ...TArgs ]) => Promise<T> | T),
+  deps: [...TArgs] = [] as unknown as [...TArgs],
+  opts?: ResourceOptions<T>
+): ResourceReturn<T, TArgs>;
+
+type ResourceReturn<T, TArgs extends readonly any[]> = [
+  Resource<T>,
+  {
+    mutate: (v: Awaited<T>) => void;
+    refetch: (...args: TArgs) => Promise<T> | T;
+    abort: (reason?: any) => void;
+  }
+];
+
+type ResourceOptions<T> = {
+  initialValue?: Awaited<T> | (() => Awaited<T>);
+  onCompleted?: (data: Awaited<T>) => void;
+  onError?: (error: unknown) => void;
+  skip?: boolean;
+  skipFirstRun?: boolean;
+  skipFnMemoization?: boolean;
+};
+
+interface FetcherOpts {
+  refetching: boolean;
+  signal: AbortSignal;
+}
+
+class Resource<T> implements ResourceLike<T> {
+  loading: boolean;
+  data: Awaited<T> | undefined;
+  error: unknown;
+  latest: Awaited<T> | undefined;
+  state: ResourceState;
+
+  constructor(init?: Partial<ResourceLike<T>>, previous?: { latest?: Awaited<T> });
+  static from<T>(data: Promise<T> | Awaited<T> | undefined): Resource<T>;
+  static getState(r: ResourceLike<unknown>): ResourceState;
+}
+
+type ResourceState = "unresolved" | "pending" | "ready" | "refreshing" | "errored";
+```
+
+Behavior:
+
+- The result of the `fetcher` call is stored in `resource.data`. `resource.loading` is true while a call is pending; a rejection value is stored in `resource.error`.
+- `resource.latest` returns the last successfully returned value. Useful to show out-of-date data while new data is loading.
+- The `fetcher` is called every time the `deps` array changes. The `deps` are passed to the `fetcher` as arguments, and a `FetcherOpts` object (containing the `AbortSignal` and a `refetching` flag) is appended as the **last** argument.
+- If `deps` is omitted, the `fetcher` is called only on mount.
+- Pass `FetcherOpts.signal` to your `fetch` (or any AbortController-aware async function) to make it abortable.
+- Every unsettled request is aborted when `deps` change or when the component unmounts.
+- `useResource` performs race-condition checks and avoids unmounted-state updates, even if your `fetcher` ignores the abort signal. It is optimized to trigger only one re-render per resource state change.
+
+`resource.state`:
+
+| state      | data | loading | error |
+|:-----------|:----:|:-------:|:-----:|
+| unresolved | No   | No      | No    |
+| pending    | No   | Yes     | No    |
+| ready      | Yes  | No      | No    |
+| refreshing | Yes  | Yes     | No    |
+| errored    | No   | No      | Yes   |
+
+#### Control object (second tuple element)
+
+- **`mutate(value)`** — directly set the resource value (aborts any pending fetch).
+- **`refetch(...args)`** — call the `fetcher` manually with the given args; `FetcherOpts` (with an abort signal) is appended automatically (aborts any pending fetch).
+- **`abort(reason?)`** — abort the current fetcher call. If aborted with no reason or with an `AbortError` instance, the state is still considered pending/refreshing, `resource.error` is not updated, and `onError` is not called. Any other reason puts the resource into the `errored` state. The resource won't be refetched until `deps` change again.
+
+#### Options
+
+- **`initialValue`** — a value (or a sync function returning it) used as the resource's initial value. If set, the initial state is `ready` or `refreshing` depending on whether `skip`/`skipFirstRun` are true.
+- **`onCompleted(data)`** / **`onError(error)`** — callbacks fired when the resource resolves or rejects.
+- **`skip`** — if true, skip automatic `fetcher` calls (you can still call `refetch` manually). Useful when waiting for deps to reach a certain state, or to trigger fetching only on some event.
+- **`skipFirstRun`** — if true, skip the first automatic trigger; the `fetcher` runs only after `deps` change.
+- **`skipFnMemoization`** — if true, the `fetcher` is not memoized, so changing it re-runs it (like a deps change).
+
+To avoid flickering, the initial state depends on `skip`/`skipFirstRun`: if either is true, the state starts as `unresolved` or `ready` (depending on `initialValue`); if both are false, it starts as `pending` or `refreshing`, so a preloader can be shown right away.
+
+> **Suspense:** Not supported, by design. Supporting it would require a global promise cache and cache busting, which is expected to come from React itself. For suspended fetches, consider a third-party library such as [suspend-react](https://github.com/pmndrs/suspend-react).
+
+#### Examples
+
+Basic, no deps, launched on mount (pairs nicely with `Await`):
+
+```tsx
+const Foo = () => {
+  const [ resource ] = useResource(() => fetch(`/api/v1/employees`).then((r) => {
+    if (!r.ok) {
+      throw new Error(`HTTP error! Status: ${r.status}`);
+    }
+    return r.json();
+  }));
+
+  return (
+    <Await
+      for={resource}
+      fallback="loading..."
+      catch={(err) => <div>Error: {String(err)}</div>}
+    >
+      {(data) => <div>Resolved data: {data}</div>}
+    </Await>
+  );
+};
+```
+
+Reading the resource manually (no `Await`):
+
+```tsx
+const Foo = () => {
+  const [ resource ] = useResource(
+    () => new Promise((res) => setTimeout(() => res(10), 1000))
+  );
+
+  return resource.loading ? (
+    <span>Loading...</span>
+  ) : resource.error ? (
+    <span>Some error {String(resource.error)}</span>
+  ) : (
+    <span>{resource.data}</span>
+  );
+};
+```
+
+Deps, refetch on change, with Axios cancellation:
+
+```tsx
+import axios, { isCancel } from "axios";
+
+const Foo = ({ id }: { id: number }) => {
+  const [ resource ] = useResource(
+    (id, { signal }) => axios.get(`/api/v1/employees/${encodeURIComponent(id)}`, { signal })
+      .catch((e: unknown) => {
+        // Axios CancelError is not the same as AbortError — rethrow it as one
+        // to avoid error flickering on cancellation.
+        if (isCancel(e)) {
+          throw { name: "AbortError" };
+        }
+        throw e;
+      }),
+    [id]
+  );
+  return "...";
+};
+```
+
+As a callback handler only (no automatic fetch), with ky:
+
+```tsx
+import ky from "ky";
+
+const [ resource, { refetch: sendForm } ] = useResource(
+  (data, { signal }) => ky.post(`/api/v1/employee/${id}`, { signal, json: data }).json(),
+  [] as [ FormData ],
+  { skip: true }
+);
+
+return (
+  <form onSubmit={(e) => {
+    const data = fooProcessor(e);
+    sendForm(data);
+  }}>
+    <Await for={resource} catch={<small>submit error</small>} fallback="Submitting...">
+      Data successfully sent!
+    </Await>
+  </form>
+);
+```
+
+Tying to an external `AbortSignal`:
+
+```tsx
+const Foo = ({ externalSignal }: { externalSignal: AbortSignal }) => {
+  const [ resource, { abort } ] = useResource(fooFetcher);
+  useEffect(() => {
+    externalSignal?.addEventListener("abort", abort);
+    return () => externalSignal?.removeEventListener("abort", abort);
+    // `abort` is memoized, so it can be safely omitted from deps.
+  }, [externalSignal]);
+  // ...
+};
+```
+
+See `useResource-examples.md` for the full set of examples.
+
+#### Error types
+
+- **`AbortError`** — `name: "AbortError"`, `code: 20`. Used to signal aborts; aborting with this (or no reason) keeps the resource pending/refreshing rather than errored.
+- **`NullishError`** — `name: "NullishError"`. Used to normalize nullish throws/rejections (e.g. `throw undefined`) so error state can be represented safely.
+
+---
+
+## Babel plugin (optional optimization)
+
+`@jellybrick/react-solid-flow/babel` is an **opt-in** Babel plugin that rewrites the control-flow components into native expressions at compile time, so they leave no runtime component (and no extra fiber) behind:
+
+- `Show` / `Switch` + `Match` / `Await` → ternaries / IIFEs.
+- `For` → a direct `mapArray(...)` call.
+- `ErrorBoundary` is never transformed (it needs a runtime class component).
+
+Inlined branches are evaluated lazily (short-circuit), unlike the eager runtime components — identical output for side-effect-free expressions. Only statically analyzable JSX whose tags are imported from this package is transformed; anything else (spreads, dynamic `Switch` children, etc.) is left to the runtime components. So omitting the plugin — or using SWC/OXC — keeps everything working.
+
+Enable it through your bundler's Babel options. With Vite (`@vitejs/plugin-react`):
+
+```ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [
+    react({ babel: { plugins: ["@jellybrick/react-solid-flow/babel"] } }),
+  ],
+});
+```
+
+---
+
+## License
+
+react-solid-flow is MIT licensed.
